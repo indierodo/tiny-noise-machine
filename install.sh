@@ -1,4 +1,5 @@
 #!/bin/bash
+pip install -r requirements.txt
 output="$HOME/Applications/Tiny Noise Machine.app"
 find . -name ".DS_Store" -delete
 # python setup.py py2app -A

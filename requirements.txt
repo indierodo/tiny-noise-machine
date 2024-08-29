@@ -1,0 +1,3 @@
+pygame
+rumps
+pyobjc-framework-Quartz
