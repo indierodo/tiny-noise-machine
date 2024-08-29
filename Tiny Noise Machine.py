@@ -43,10 +43,19 @@ class TinyNoiseMachine(rumps.App):
     def add_new_item(self, item):
         self.menu.add(item)
 
-def is_screen_locked():
+def check_screen_locked():
+    while True:
+        if screen_is_locked():
+            pygame.mixer.pause()
+        else:
+            if playing:
+                pygame.mixer.unpause()
+        time.sleep(1)
+
+def screen_is_locked():
     try:
         quartz_dict = Quartz.CGSessionCopyCurrentDictionary()
-        return quartz_dict.get('CGSSessionScreenIsLocked') == 1
+        return 'CGSSessionScreenIsLocked' in quartz_dict
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
@@ -141,4 +150,5 @@ if __name__ == "__main__":
 
     # Start the lazy load in a separate thread
     ThreadPoolExecutor(max_workers=1).submit(start_lazy_load)
+    ThreadPoolExecutor(max_workers=1).submit(check_screen_locked)
     app.run()
