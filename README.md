@@ -4,7 +4,7 @@ A background sound player for MacOS built with rumps, pygame and py2app. It's mi
 
 ## Download
 
-Download from this repo's [releases page](./releases).
+Download from this repo's [releases page](https://github.com/indierodo/tiny-noise-machine/releases).
 
 ## Usage
 
