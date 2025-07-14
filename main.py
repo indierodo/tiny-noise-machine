@@ -2,6 +2,7 @@
 
 import math
 import os
+from pathlib import Path
 import time
 from json.decoder import JSONDecodeError
 import json
@@ -12,26 +13,31 @@ import rumps
 import Quartz
 
 playing = False
-settings = {}
+config = {}
 
-file_path = "settings.json"
-try:
-    if not os.path.isfile(file_path):
-        open(file_path, 'a', encoding="utf-8").close()
-    else:
-        with open(file_path, "r", encoding="utf-8") as settings_json:
-            try:
-                settings = json.load(settings_json)
-            except json.JSONDecodeError:
-                pass
-except Exception as e:
-    pass
+def load_or_create_config_file():
+    global config
+    config_dir = Path.home() / "Library" / "com.indierodo.tinynoisemachine"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config_file = config_dir / "settings.json"
+
+    if not config_file.exists():
+        with open(config_file, "w", encoding="utf-8") as f:
+            f.write("{}\n")
+
+    with open(config_file, "r", encoding="utf-8") as settings_json:
+        config = json.load(settings_json)
 
 def save_and_quit(sender):
-    global settings
+    global config
+    config_dir = Path.home() / "Library" / "com.indierodo.tinynoisemachine"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config_file = config_dir / "settings.json"
     
-    with open("settings.json", "w", encoding="utf-8") as settings_json:
-        json.dump(settings, settings_json)
+    with open(config_file, "w", encoding="utf-8") as f:
+        print("Writing to file", end=None)
+        print(config)
+        json.dump(config, f)
 
     rumps.quit_application()
 
@@ -72,6 +78,8 @@ def play_pause(sender):
     playing = not playing
 
 def audio_player(title, audio_file, index):
+    title = Path(audio_file).stem.capitalize()
+    audio_file_path = str(audio_file)
 
     key = f"volume{index}"
     
@@ -84,18 +92,18 @@ def audio_player(title, audio_file, index):
         elif new_volume >= 0.01:
             channel.unpause()
 
-        global settings
-        settings[key] = new_volume
+        global config
+        config[key] = new_volume
 
-    sound = pygame.mixer.Sound(audio_file)
+    sound = pygame.mixer.Sound(audio_file_path)
     channel = pygame.mixer.Channel(index)
     channel.play(sound, loops=-1)
     channel.pause()
     channel.set_volume(0)
 
-    global settings
-    if key in settings:
-        volume = float(settings[key])
+    global config
+    if key in config:
+        volume = float(config[key])
         if volume >= 0.01:
             print("setting volume of", title, "to", volume)
             channel.set_volume(volume)
@@ -111,22 +119,20 @@ def audio_player(title, audio_file, index):
         callback=set_volume
     )
 
-    title = audio_file.replace('.opus', '').replace('content/', '')
-
-    print("creating menu for", title)
-
     return [title, [slider_item]]
 
 def lazy_load_menu_items(app):
-    audio_files = [f for f in os.listdir("content") if f.endswith(".opus")]
+    content_dir = Path.home() / "Library" / "com.indierodo.tinynoisemachine" / "content"
+    content_dir.mkdir(parents=True, exist_ok=True)
+    supported_formats = ['.wav', '.mp3', '.ogg', '.opus', '.flac', '.aiff']
+    audio_files = [f.name for f in content_dir.glob("*") if f.suffix.lower() in supported_formats]
     audio_files.sort()
+    players = []
 
-    print("start loading")
-    players = [
-        audio_player(audio_files[i], "content/" + audio_files[i], i)
-        for i in range(len(audio_files))
-    ]
-    print("finished loading")
+    for i, audio_file in enumerate(audio_files):
+        filename = content_dir / audio_file
+        a_p = audio_player(audio_file, filename, i)
+        players.append(a_p)
 
     del app.menu["Loading..."]
     del app.menu["Quit"]
@@ -148,6 +154,7 @@ if __name__ == "__main__":
         time.sleep(1)  # Give the app a moment to start
         lazy_load_menu_items(app)
 
+    load_or_create_config_file()
     # Start the lazy load in a separate thread
     ThreadPoolExecutor(max_workers=1).submit(start_lazy_load)
     ThreadPoolExecutor(max_workers=1).submit(check_screen_locked)

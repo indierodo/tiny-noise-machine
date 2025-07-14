@@ -1,9 +1,7 @@
-content/*.opus
-content/backup
-settings.json
-
 # Created by https://www.toptal.com/developers/gitignore/api/macos,windows,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,windows,python
+
+dist
 
 ### macOS ###
 # General
